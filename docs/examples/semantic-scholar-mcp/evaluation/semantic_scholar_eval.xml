@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<evaluation>
+  <qa_pair>
+    <question>Use the Semantic Scholar MCP tools to resolve the DOI "10.1038/nature14539" to its canonical Semantic Scholar paperId (CorpusId). Return only the numeric CorpusId.</question>
+    <answer>209420551</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Look up the 2017 paper "Attention Is All You Need" on Semantic Scholar. How many authors are listed on the paper record? Return a single integer.</question>
+    <answer>8</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The paper "Deep Residual Learning for Image Recognition" (He et al., 2015) has a Semantic Scholar record. In what year was it first published according to the Semantic Scholar `year` field? Return the four-digit year.</question>
+    <answer>2015</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Using s2_search_authors, find the Semantic Scholar authorId for the author named "Yoshua Bengio" (the prolific deep-learning researcher, not any namesake). Return the numeric authorId string exactly as reported.</question>
+    <answer>1780531</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The arXiv preprint arXiv:1512.03385 corresponds to a seminal computer-vision paper. Use s2_get_paper with the id "ARXIV:1512.03385" and return the first author's family name (surname) exactly as listed.</question>
+    <answer>He</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use s2_match_paper_by_title with the exact title "ImageNet Classification with Deep Convolutional Neural Networks". Return the publication year (four digits) reported on the matched paper.</question>
+    <answer>2012</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Using s2_get_paper_references on the paper with DOI 10.1038/nature14539, how many reference entries are reported by Semantic Scholar's `referenceCount` field on that paper? Return a single integer.</question>
+    <answer>100</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Using s2_list_dataset_releases, what is the dataset release_id format used by Semantic Scholar? Answer with the literal format string describing the pattern of the release identifiers returned.</question>
+    <answer>YYYY-MM-DD</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Use s2_resolve_identifier on the PubMed ID "PMID:20813121" and return the Semantic Scholar paperId (CorpusId) exactly as reported.</question>
+    <answer>7954013</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>The paper "Generative Adversarial Nets" (Goodfellow et al., NIPS 2014) has a Semantic Scholar record. Use s2_match_paper_by_title to find it and return the venue string exactly as Semantic Scholar reports it in the `venue` field.</question>
+    <answer>Neural Information Processing Systems</answer>
+  </qa_pair>
+</evaluation>

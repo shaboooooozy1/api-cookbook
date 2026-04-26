@@ -1,0 +1,72 @@
+---
+title: "Semantic Scholar MCP Server"
+description: "A comprehensive MCP server for academic paper search, citation graphs, and research recommendations via the Semantic Scholar API"
+---
+
+# Semantic Scholar MCP Server
+
+A complete, production-quality [Model Context Protocol](https://modelcontextprotocol.io/) server
+for the [Semantic Scholar](https://www.semanticscholar.org/) Graph, Recommendations,
+and Datasets APIs -- built with Python and
+[FastMCP](https://github.com/modelcontextprotocol/python-sdk).
+
+This example was generated using the
+[`mcp-builder` skill](https://github.com/anthropics/skills/tree/main/skills/mcp-builder)
+and demonstrates every phase of its workflow: API research, tool design,
+implementation, and evaluation.
+
+## What you'll learn
+
+- How to structure a Python MCP server with modular shared utilities
+- Pydantic v2 input validation for all tool parameters
+- Markdown + JSON dual-format response rendering
+- Pagination (offset-based and token-based)
+- Retry-with-backoff for rate-limited APIs
+- MCP resources alongside tools
+- Evaluation-driven development with a 10-question test suite
+
+## Quick start
+
+```bash
+uvx semantic-scholar-mcp
+
+# Or from source
+pip install -e .
+semantic-scholar-mcp
+```
+
+### Claude Code / Claude Desktop config
+
+```json
+{
+  "mcpServers": {
+    "semantic-scholar": {
+      "command": "uvx",
+      "args": ["semantic-scholar-mcp"],
+      "env": {
+        "SEMANTIC_SCHOLAR_API_KEY": "your-key-here"
+      }
+    }
+  }
+}
+```
+
+## 18 tools at a glance
+
+| Category | Tools |
+| --- | --- |
+| **Paper search** | `s2_search_papers`, `s2_search_papers_bulk`, `s2_match_paper_by_title`, `s2_autocomplete_paper_title` |
+| **Paper details** | `s2_get_paper`, `s2_get_paper_citations`, `s2_get_paper_references`, `s2_batch_get_papers` |
+| **Authors** | `s2_search_authors`, `s2_get_author`, `s2_get_author_papers`, `s2_batch_get_authors` |
+| **Recommendations** | `s2_recommend_from_paper`, `s2_recommend_from_list` |
+| **Datasets** | `s2_list_dataset_releases`, `s2_get_release_datasets`, `s2_get_dataset_download_links` |
+| **Utility** | `s2_resolve_identifier` |
+
+## Evaluation
+
+An XML evaluation suite with 10 verifiable questions lives in
+`evaluation/semantic_scholar_eval.xml`.
+
+## License
+
+MIT
