@@ -1,10 +1,16 @@
-name: MDX Validation
+name: PR Validation
 
 on:
   pull_request:
     branches: [ main ]
     paths:
       - 'docs/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'requirements-dev.txt'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/**'
 
 jobs:
@@ -13,19 +19,22 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '18'
           cache: 'npm'
-          
-      - name: MDX validation dependencies
-        run: npm install --save-dev @mdx-js/mdx @mdx-js/loader glob
-        
+
+      - name: Install Node dependencies
+        run: npm ci || npm install
+
+      - name: Run Node tests (validate-mdx)
+        run: npm test
+
       - name: Validate MDX files
-        run: node scripts/validate-mdx.js
-          
+        run: npm run validate:mdx
+
       - name: Check for broken links
         run: |
           # Simple check for common broken link patterns
@@ -35,7 +44,7 @@ jobs:
             exit 1
           fi
           echo "✅ No obvious broken links found"
-          
+
       - name: Validate frontmatter
         run: |
           # Check that all MDX files have required frontmatter
@@ -45,4 +54,27 @@ jobs:
               exit 1
             fi
             echo "✅ $file - Has frontmatter"
-          done 
+          done
+
+  python-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        run: pytest -v

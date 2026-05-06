@@ -1,0 +1,7 @@
+# Development / test dependencies for the cookbook.
+# Install with: pip install -r requirements-dev.txt
+pytest>=7.4
+responses>=0.24
+pydantic>=2.0
+requests>=2.31
+python-dotenv>=1.0

@@ -21,3 +21,16 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Example runtime artifacts
+daily_knowledge_bot.log
+docs/examples/daily-knowledge-bot/facts/
+docs/examples/daily-knowledge-bot/daily_fact_*.txt
