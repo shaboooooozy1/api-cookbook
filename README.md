@@ -26,6 +26,7 @@ Community-built applications including:
 In-depth tutorials for advanced implementations:
 - Memory management patterns
 - OpenAI agents integration
+- [Perplexity MCP server](docs/articles/perplexity-mcp-server/) - connect Claude, Cursor, and other MCP clients to Sonar
 - Multi-modal implementations
 
 ## Quick Start

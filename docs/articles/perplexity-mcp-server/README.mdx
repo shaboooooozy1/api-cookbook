@@ -1,0 +1,93 @@
+---
+title: Perplexity MCP Server
+description: Connect Claude Desktop, Claude Code, Cursor, and other MCP clients to Perplexity's Sonar API using the official Model Context Protocol server
+sidebar_position: 2
+keywords: [mcp, model-context-protocol, claude, cursor, sonar, integration, tools]
+---
+
+## 🎯 What You'll Build
+
+By the end of this guide, you'll have:
+- ✅ The Perplexity MCP server wired into an MCP-compatible client (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, etc.)
+- ✅ Real-time Sonar search available as a native tool inside your assistant
+- ✅ A reusable configuration block you can drop into any MCP client
+
+## 🤔 Why MCP?
+
+The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standard for connecting AI assistants to external tools and data sources. Instead of writing a bespoke API integration for every client, you run an MCP server once and any MCP-aware client can use it.
+
+The Perplexity MCP server exposes Sonar's grounded, real-time web search as a tool — so an assistant like Claude can answer questions with fresh, cited information without you writing any glue code.
+
+## 📋 Prerequisites
+
+Before starting, ensure you have:
+
+- **Node.js 18+** (for `npx`) installed and on your `PATH`
+- A **Perplexity API key** — [get one here](https://docs.perplexity.ai/home)
+- An **MCP-compatible client**, such as:
+  - [Claude Desktop](https://claude.ai/download)
+  - [Claude Code](https://docs.claude.com/en/docs/claude-code)
+  - [Cursor](https://www.cursor.com/)
+  - [VS Code](https://code.visualstudio.com/) with an MCP extension
+  - [Windsurf](https://windsurf.com/)
+
+## 🚀 Configuration
+
+Add the following block to your MCP client's configuration file. The `npx` command will fetch and run the server on demand — no global install required.
+
+```json
+{
+  "mcpServers": {
+    "perplexity": {
+      "command": "npx",
+      "args": ["-y", "@perplexity-ai/modelcontextprotocol"],
+      "env": {
+        "PERPLEXITY_API_KEY": "pplx-..."
+      }
+    }
+  }
+}
+```
+
+Replace `pplx-...` with your actual Perplexity API key.
+
+### Where to put this config
+
+| Client          | Config file location |
+| --------------- | -------------------- |
+| Claude Desktop  | macOS: `~/Library/Application Support/Claude/claude_desktop_config.json` — Windows: `%APPDATA%\Claude\claude_desktop_config.json` |
+| Claude Code     | `~/.claude.json` (or per-project `.mcp.json`) |
+| Cursor          | `~/.cursor/mcp.json` (or per-project `.cursor/mcp.json`) |
+| VS Code         | `.vscode/mcp.json` in your workspace |
+| Windsurf        | `~/.codeium/windsurf/mcp_config.json` |
+
+After saving the config, fully restart the client so it picks up the new server.
+
+## ✅ Verify the Connection
+
+Once the client restarts, it will launch the MCP server in the background and discover its tools.
+
+In Claude Desktop or Claude Code, ask something that requires fresh information:
+
+> "Use the Perplexity tool to find the latest release notes for the Sonar API."
+
+If everything is wired up correctly, the assistant will invoke the Perplexity tool and respond with a cited, up-to-date answer.
+
+## 🔐 Security Notes
+
+- **Never commit your API key.** Keep `PERPLEXITY_API_KEY` only in local client config or a secret manager — not in source control.
+- Treat the MCP config file the same as a `.env` file. Add it to `.gitignore` if it lives inside a project.
+- Rotate the key from the [Perplexity dashboard](https://www.perplexity.ai/settings/api) if you suspect it has leaked.
+
+## 🛠️ Troubleshooting
+
+- **`npx` not found** — install Node.js 18+ and ensure `node`/`npx` are on your `PATH`. On Windows, restart the client after a fresh Node install.
+- **Server exits immediately** — double-check the `PERPLEXITY_API_KEY` value and that your account has API access enabled.
+- **Client doesn't list the tool** — confirm the JSON is syntactically valid (no trailing commas) and that you fully quit and reopened the client.
+- **Corporate proxy** — set `HTTPS_PROXY` in the `env` block so `npx` and the server can reach the registry and Perplexity API.
+
+## 📚 Related Resources
+
+- [Model Context Protocol specification](https://modelcontextprotocol.io/)
+- [Perplexity API documentation](https://docs.perplexity.ai/home)
+- [OpenAI Agents Integration guide](/cookbook/articles/openai-agents-integration/README) — an alternative integration path using direct API calls
