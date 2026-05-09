@@ -156,20 +156,15 @@ class DailyFactService:
     
     def get_daily_topic(self) -> str:
         """
-        Select a topic for today.
-        
+        Select a topic for today based on the day of the month.
+
         Returns:
             The selected topic
         """
+        if not self.topics:
+            raise ValueError("No topics available")
         day = datetime.now().day
-        # Prevent index errors with modulo and ensure we don't get -1 on the last day
-        topic_index = day % len(self.topics)
-        if topic_index == 0 and len(self.topics) > 0:
-            topic_index = len(self.topics) - 1
-        else:
-            topic_index -= 1
-            
-        return self.topics[topic_index]
+        return self.topics[(day - 1) % len(self.topics)]
     
     def get_random_topic(self) -> str:
         """
