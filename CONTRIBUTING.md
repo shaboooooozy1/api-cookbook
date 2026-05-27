@@ -143,6 +143,27 @@ Brief description of your contribution
 - Handle errors appropriately
 - Include example environment variables (without actual keys)
 
+## Running tests
+
+The cookbook has a small but growing test suite covering the Python examples
+and the MDX validator. CI runs both on every pull request.
+
+```bash
+# Python tests (Sonar API calls are mocked — no key required)
+pip install -r requirements-dev.txt
+pytest
+
+# Node tests (validate-mdx.js)
+npm install
+npm test
+```
+
+When adding a new Python example, please add at least:
+
+- a unit test for any Pydantic model used as a `response_format` schema, and
+- a `pytest`-style test that exercises the public API surface of the example
+  using the `mock_sonar` fixture from `tests/conftest.py` (no live API calls).
+
 ## What to Avoid
 
 - Basic "Hello World" examples that don't demonstrate real use cases

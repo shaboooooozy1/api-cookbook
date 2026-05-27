@@ -1,5 +1,9 @@
 {
   "type": "module",
+  "scripts": {
+    "validate:mdx": "node scripts/validate-mdx.js",
+    "test": "node --test scripts/__tests__/*.test.mjs"
+  },
   "devDependencies": {
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/mdx": "^3.1.0",
