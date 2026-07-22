@@ -95,6 +95,26 @@ python financial_news_tracker.py "tech stocks"
 
 ---
 
+### 📈 [Equity Research Brief](equity-research-brief/)
+
+**Purpose**: Generate institutional-grade equity research briefs for any public ticker  
+**Type**: Command-line tool  
+**Use Cases**: Investor workflows, fundamental analysis, earnings prep, peer benchmarking  
+
+**Key Features**:
+- Uses the Agent API's built-in `finance_search` tool for structured fundamentals
+- Three preset configurations (live quote, single-company, multi-step research)
+- Cites Perplexity finance source URLs alongside the brief
+- Reports `finance_search` invocation count and total request cost
+
+**Quick Start**:
+```bash
+cd equity-research-brief/
+python equity_research_brief.py NVDA
+```
+
+---
+
 ### 📚 [Academic Research Finder](research-finder/)
 
 **Purpose**: Academic literature discovery and summarization  
@@ -150,6 +170,7 @@ Additional requirements vary by example and are listed in each `requirements.txt
 | Learn something new daily | **Daily Knowledge Bot** |
 | Look up medical information | **Disease Information App** |
 | Track financial markets | **Financial News Tracker** |
+| Generate an equity research brief | **Equity Research Brief** |
 | Research academic topics | **Academic Research Finder** |
 
 ## 🤝 Contributing

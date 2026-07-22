@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stock Price Q&A · Perplexity Agent API sandbox</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Stock Price Q&amp;A</h1>
+        <p class="sub">
+          Ask in plain English. The Perplexity Agent API <code>sandbox</code>
+          tool figures out the ticker and period, fetches the price history and
+          renders the chart inside an isolated container, and returns it as a
+          downloadable file we show here.
+        </p>
+      </header>
+
+      <form id="chart-form" class="card">
+        <label class="query-label">
+          Your question
+          <input id="query" type="text" autocomplete="off" required
+                 placeholder="What was Apple's stock price over the last 6 months?" />
+        </label>
+        <button id="submit" type="submit">Ask</button>
+        <div class="examples">
+          <span>Try:</span>
+          <button type="button" class="chip">Apple stock price over the last 6 months</button>
+          <button type="button" class="chip">How has NVIDIA traded in the past year?</button>
+          <button type="button" class="chip">Tesla closing prices, last 3 months</button>
+        </div>
+        <p class="hint">
+          Each question starts a background sandbox session (~30–60s) and may
+          retry if a data source rate-limits.
+        </p>
+      </form>
+
+      <section id="status" class="status hidden">
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="status-text">Working…</span>
+      </section>
+
+      <section id="error" class="error hidden"></section>
+
+      <section id="result" class="card result hidden">
+        <div class="result-head">
+          <h2 id="result-title"></h2>
+          <div class="actions">
+            <a id="view-json" class="secondary" target="_blank" rel="noopener">View raw JSON</a>
+            <button id="download" type="button" class="secondary">Download CSV</button>
+          </div>
+        </div>
+        <img id="chart" class="chart-img" alt="Closing-price chart rendered in the sandbox" />
+        <div id="answer-wrap" class="answer-wrap hidden">
+          <h3>Analysis</h3>
+          <p id="answer" class="answer"></p>
+        </div>
+        <dl id="stats" class="stats"></dl>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
