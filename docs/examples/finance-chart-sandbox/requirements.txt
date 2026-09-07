@@ -1,0 +1,5 @@
+# No third-party dependencies.
+#
+# The Agent API is called over raw HTTP (stdlib urllib). The sandbox both
+# fetches the prices and renders the chart, so the CSV and PNG are downloaded
+# as files — this CLI needs nothing beyond the Python standard library (3.9+).

@@ -1,0 +1,244 @@
+---
+title: Finance Chart (Sandbox)
+description: Chart a stock's closing-price history with the Perplexity Agent API sandbox tool — the sandbox fetches the prices and renders the chart inside an isolated container, returning the CSV and PNG as downloadable files.
+sidebar_position: 8
+keywords: [agent-api, sandbox, code-execution, file-creation, stock-chart, matplotlib, csv, png, background]
+---
+
+# Finance Chart (Sandbox)
+
+A command-line tool that charts a stock's closing-price history using Perplexity's [Agent API](https://docs.perplexity.ai/docs/agent-api/quickstart) [`sandbox`](https://docs.perplexity.ai/docs/agent-api/tools/sandbox) tool.
+
+Everything runs inside **one background Agent API request**:
+
+1. The model is given the `sandbox` tool — a Python environment with `urllib`/`pandas`/`matplotlib` and a writable working directory.
+2. Inside the sandbox it fetches the ticker's daily closing prices from a **pinned data source** (Yahoo Finance's v8 chart JSON endpoint), **writes `prices.csv`**, and **renders `chart.png`**. The sandbox exposes both files as downloadable **artifacts**.
+
+The script polls the request to completion and downloads both files — no local rendering, so it has no third-party dependencies.
+
+![AAPL closing price chart, last month](https://raw.githubusercontent.com/perplexityai/api-cookbook/main/static/img/finance-chart-sandbox-aapl.png)
+
+## How it differs from the docs (important)
+
+This recipe was built and verified against the live Agent API. A few realities shape the design:
+
+- **The `sandbox` tool requires a background task.** On the synchronous/streaming path the request is rejected with `streaming failed: ... unknown tool "sandbox"`. You must submit with `background: true` and poll the response by id. This script always does that.
+- **The sandbox returns files.** Anything the sandbox writes to its working directory comes back as a `share_file` output item carrying a `file_id`, `filename`, and a ready `/v1/responses/{id}/files/{file_id}/content` URL — you can also list them with `GET /v1/responses/{id}/files`. The script downloads the `prices.csv` and `chart.png` artifacts directly, instead of scraping anything out of `stdout`.
+- **Pin the data source to cut latency.** The slow part of an unconstrained sandbox run is the model *hunting* for a price source (public pages `429` or gate behind captchas — easily 3–7 sandbox calls). Telling it to hit Yahoo's v8 chart JSON endpoint directly turns that into a **single** fetch, and leaves token budget to render the chart in the same session. A typical run is now **one sandbox invocation**.
+- **Give the sandbox output-token headroom.** The sandbox spends `max_output_tokens` *writing the code* that fetches the data and renders the chart. A tight cap can starve the file-writing step (the data gets fetched but the files are never written). This recipe uses `8192`.
+- **`finance_search` has no history (current deployment).** The top-level `finance_search` tool returns only the *latest quote* — a single row — so it can't produce a price *series*. The history is fetched inside the sandbox instead.
+- **Sandbox data fetching is best-effort.** Even a pinned source can rate-limit; the prompt falls back to a second source (Stooq), and the script retries the whole call a few times (`--attempts`).
+
+The Agent API is called over **raw HTTP** (stdlib `urllib`, no SDK) so the exact request body is visible and the endpoint is configurable.
+
+## Features
+
+- One background request orchestrates the sandbox; the script polls it to completion (resilient to transient 5xx)
+- The sandbox **fetches the prices and renders the chart itself**, writing a `date,close` CSV and a PNG; the script reads the `share_file` artifacts off the response and downloads them (falling back to the `/files` endpoint)
+- Pinned data source (Yahoo v8 chart JSON, Stooq fallback) keeps it to ~1 sandbox call
+- Automatic retries until both files come back and the CSV parses
+- No third-party dependencies — the chart is rendered server-side, in the sandbox
+- Configurable `--base-url` / `PERPLEXITY_BASE_URL`; reports sandbox invocation count and request cost
+
+## Prerequisites
+
+- Python 3.9+
+- A Perplexity API key with Agent API access. The `sandbox` tool is in **preview** — see the [sandbox docs](https://docs.perplexity.ai/docs/agent-api/tools/sandbox) for availability.
+
+## Installation
+
+```bash
+cd docs/examples/finance-chart-sandbox
+# No dependencies to install — the API is called over raw HTTP and the chart is
+# rendered inside the sandbox. (requirements.txt is intentionally empty.)
+chmod +x finance_chart_sandbox.py
+```
+
+## API Key Setup
+
+```bash
+export PERPLEXITY_API_KEY="your-api-key-here"
+```
+
+You can also pass `--api-key`, place the key in a `.pplx_api_key` file, or add a `PERPLEXITY_API_KEY=` / `PPLX_API_KEY=` line to a local `.env`.
+
+## Quick Start
+
+Chart Apple's last 6 months of closing prices:
+
+```bash
+./finance_chart_sandbox.py AAPL
+```
+
+This writes `AAPL_6mo.csv` and `AAPL_6mo.png` to the current directory.
+
+## Usage
+
+```bash
+./finance_chart_sandbox.py TICKER [--period 6mo] [--start YYYY-MM-DD --end YYYY-MM-DD] \
+    [--model MODEL] [--attempts 3] [--max-steps 15] [--poll-timeout 300] \
+    [--out-dir DIR] [--base-url URL] [--api-key KEY] [--keep-json]
+```
+
+### A one-month chart
+
+```bash
+./finance_chart_sandbox.py AAPL --period 1mo
+```
+
+### An explicit date range, more retries
+
+```bash
+./finance_chart_sandbox.py MSFT --start 2025-01-01 --end 2025-06-30 --attempts 5
+```
+
+### Point at a different endpoint
+
+```bash
+PERPLEXITY_BASE_URL=https://api.perplexity.ai ./finance_chart_sandbox.py NVDA
+```
+
+## Example Output
+
+```
+[attempt 1/3] Asking the sandbox to fetch AAPL closing prices over the past 1 month and plot them...
+
+Data points: 21 (2026-05-08 → 2026-06-08)
+CSV:   AAPL_1mo.csv
+Chart: AAPL_1mo.png  (fetched and rendered in the sandbox)
+Sandbox invocations: 1
+Cost: 0.1003 USD
+```
+
+The CSV (`AAPL_1mo.csv`):
+
+```csv
+date,close
+2026-05-08,293.32
+2026-05-11,292.68
+2026-05-12,294.80
+...
+```
+
+…and `AAPL_1mo.png` is a line chart of `close` over `date`.
+
+## Web UI (FastAPI + JS)
+
+A small web app in [`webapp/`](webapp/) puts a **natural-language** front door
+on the agent loop: ask *"What was Apple's stock price over the last 6 months?"*
+and the model resolves the ticker and period itself, fetches the prices and
+renders the chart in the sandbox, and the page shows the result.
+
+Unlike the CLI (which calls the API over raw HTTP), the web backend uses the
+**Perplexity Python SDK** and reuses the CLI module's parsing and shared-file
+helpers. It runs a **two-phase** flow, because the `sandbox` tool only runs as a
+(non-streamable) background task:
+
+1. **Data** — a background call (`client.responses.create(..., background=True)`
+   then `client.responses.retrieve(id)`) where the sandbox resolves the ticker +
+   period, fetches the prices, **writes `prices.csv` and renders `chart.png`**
+   (both downloaded by the backend), and prints a tiny `META` block for routing
+   (ticker + label).
+2. **Answer** — a separate **streaming** call (`stream=True`) that writes a short
+   natural-language analysis of the series, token by token.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/charts` | Submit a question (`{query, attempts?}`) → returns a `job_id` |
+| `GET /api/charts/{job_id}/events` | **Server-Sent Events**: `progress` → `chart` → streamed `token`s → `done` |
+| `GET /api/charts/{job_id}/chart.png` | The chart PNG the sandbox rendered |
+| `GET /api/charts/{job_id}/response.json` | The **raw Agent API response** from phase 1 (sandbox code, stdout, usage) |
+| `GET /api/charts/{job_id}/csv` | Download the `date,close` CSV |
+
+The job runs in a worker thread and writes incremental state onto the job; the
+SSE endpoint merely *tails* that state, so reconnects never re-run the work. The
+frontend is vanilla JS with **no build step and no charting library** — on the
+`chart` event it simply points an `<img>` at the sandbox-rendered PNG, appends
+the streamed analysis live, and links to the raw JSON and CSV.
+
+![Finance Chart sandbox web UI](https://raw.githubusercontent.com/perplexityai/api-cookbook/main/static/img/finance-chart-sandbox-ui.png)
+
+### Run it
+
+```bash
+cd docs/examples/finance-chart-sandbox/webapp
+pip install -r requirements.txt   # perplexityai + fastapi + uvicorn
+export PERPLEXITY_API_KEY="your-api-key-here"   # or a .env in this dir
+python app.py                     # serves on 127.0.0.1:8000
+# PORT=8060 python app.py         # if 8000 is taken
+```
+
+Open the page, type a question (or click an example), and hit **Ask**. The
+status line updates per attempt while the background sandbox runs (~20–40s).
+
+## Code Walkthrough
+
+**1. Submit a background request with the sandbox tool (raw HTTP).**
+
+```python
+payload = {
+    "model": "openai/gpt-5.5",
+    "instructions": SYSTEM_PROMPT,           # "fetch from Yahoo v8, write CSV + render PNG"
+    "input": "Fetch this exact URL ... Write prices.csv and render chart.png for AAPL ...",
+    "tools": [{"type": "sandbox"}],
+    "background": True,                       # required for the sandbox tool
+    "max_output_tokens": 8192,                # headroom for the in-sandbox code
+    "max_steps": 15,
+}
+# POST https://api.perplexity.ai/v1/responses  (Authorization: Bearer <key>)
+```
+
+The prompt pins the data source (`https://query1.finance.yahoo.com/v8/finance/chart/<TICKER>?range=<RANGE>&interval=1d`, Stooq as fallback) so the sandbox fetches in one shot instead of hunting across rate-limited pages.
+
+**2. Poll the response by id until it completes.**
+
+```python
+# GET https://api.perplexity.ai/v1/responses/{id}
+while body["status"] in ("queued", "in_progress"):
+    time.sleep(3)
+    body = get(f"/v1/responses/{body['id']}")   # tolerate transient 5xx
+```
+
+**3. Find the files the sandbox shared and download them.**
+
+```python
+for item in body["output"]:
+    if item["type"] == "share_file":
+        url = item["url"]   # /v1/responses/{id}/files/{file_id}/content
+        # item["filename"] is "prices.csv" or "chart.png"
+data = get_raw(url)         # Authorization: Bearer <key>
+```
+
+The script reads the `share_file` items off the response (falling back to `GET /v1/responses/{id}/files` if none are inlined), downloads both the `.csv` and the `.png`, validates the CSV parses into ≥2 `date,close` rows, and retries the whole call if not.
+
+**4. Keep the files.** The CSV and the sandbox-rendered PNG are written to disk — there's nothing to render client-side, so the CLI has no third-party dependencies. (The CSV is parsed only to report the series length.)
+
+## Prompting Guidance
+
+- **Make the files the deliverable.** State plainly that the task is complete only once `prices.csv` and `chart.png` exist in the working directory — otherwise the model may answer with the prices in prose and never write the files.
+- **Pin the data source.** Handing the sandbox the exact fetch URL (Yahoo's v8 chart JSON) collapses a multi-call source hunt into a single fetch — the biggest latency win — and frees up budget to render the chart in the same session.
+- **Give output-token headroom.** The sandbox spends `max_output_tokens` writing the code that fetches the data and renders the chart; with too small a cap it runs out before the write step. `8192` is comfortable.
+- **Name a fallback source.** Even a pinned endpoint can `429`; telling the model to fall back to a second source (Stooq) improves the hit rate.
+- **Forbid fabrication.** The system prompt instructs the model to use only prices it actually retrieved — never to interpolate or estimate.
+
+## Pricing
+
+- **`sandbox`**: `$0.03` per container session
+- **Model tokens**: billed separately per Agent API token pricing
+
+Sandbox invocations are counted under `usage.tool_calls_details.sandbox.invocation`, and file sharing under `usage.tool_calls_details.share_file.invocation`. With a pinned data source a typical run is **one** sandbox invocation (no in-container web searches), which keeps cost low (~`$0.10` in our runs). See [Perplexity Pricing](https://docs.perplexity.ai/docs/getting-started/pricing) for current rates.
+
+## Limitations
+
+- `sandbox` is in **preview** and must be run as a background task
+- Price history comes from third-party sources (Yahoo v8 chart JSON, Stooq fallback) fetched inside the sandbox, so **data accuracy and availability depend on those sources** — values should be sanity-checked, and obscure/non-US tickers may fail (Stooq expects a `.us` suffix)
+- Fetching is **best-effort**: rate limits can cause an attempt to return no files; the script retries, but a run may still fail (raise `--attempts`)
+- Each attempt is a separate billed sandbox session
+- This is not investment advice
+
+## Resources
+
+- [Sandbox Tool](https://docs.perplexity.ai/docs/agent-api/tools/sandbox)
+- [Agent API Quickstart](https://docs.perplexity.ai/docs/agent-api/quickstart)
+- [Finance Search Tool](https://docs.perplexity.ai/docs/agent-api/tools/finance-search)
+- [Perplexity Python SDK](https://github.com/ppl-ai/perplexity-python)
