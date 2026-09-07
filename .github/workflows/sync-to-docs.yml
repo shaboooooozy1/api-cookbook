@@ -13,15 +13,33 @@ jobs:
         uses: actions/checkout@v6
         with:
           path: cookbook-repo
-          
+
+      - name: Check docs sync configuration
+        id: preflight
+        env:
+          DOCS_REPO: ${{ secrets.DOCS_REPO_NAME || 'ppl-ai/api-docs' }}
+          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+        run: |
+          if [ -z "$DOCS_REPO_TOKEN" ]; then
+            echo "::notice::DOCS_REPO_TOKEN secret is not set - skipping docs sync. To enable, add the DOCS_REPO_TOKEN repository secret (and optionally DOCS_REPO_NAME)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          elif ! git ls-remote --exit-code "https://x-access-token:${DOCS_REPO_TOKEN}@github.com/${DOCS_REPO}.git" HEAD > /dev/null 2>&1; then
+            echo "::notice::Docs repository ${DOCS_REPO} is not accessible with the configured token - skipping docs sync."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout docs repository
+        if: steps.preflight.outputs.enabled == 'true'
         uses: actions/checkout@v6
         with:
           repository: ${{ secrets.DOCS_REPO_NAME || 'ppl-ai/api-docs' }}
           token: ${{ secrets.DOCS_REPO_TOKEN }}
           path: docs-repo
-          
+
       - name: Setup Node.js
+        if: steps.preflight.outputs.enabled == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '18'
@@ -29,15 +47,18 @@ jobs:
           cache-dependency-path: docs-repo/package.json
           
       - name: Install docs dependencies
+        if: steps.preflight.outputs.enabled == 'true'
         run: |
           cd docs-repo
           npm install
           
       - name: Clear existing cookbook content
+        if: steps.preflight.outputs.enabled == 'true'
         run: |
           rm -rf docs-repo/cookbook/* || true
           
       - name: Copy cookbook content to docs repository
+        if: steps.preflight.outputs.enabled == 'true'
         run: |
           # Create cookbook directory if it doesn't exist
           mkdir -p docs-repo/cookbook
@@ -52,18 +73,21 @@ jobs:
           fi
           
       - name: Generate cookbook navigation
+        if: steps.preflight.outputs.enabled == 'true'
         run: |
           cd docs-repo  
           # Run the navigation generation script
           node scripts/generate-cookbook-nav.js
           
       - name: Configure git
+        if: steps.preflight.outputs.enabled == 'true'
         run: |
           cd docs-repo
           git config --local user.email "cookbook-sync@perplexity.ai"
           git config --local user.name "Cookbook Sync Bot"
           
       - name: Commit and push changes
+        if: steps.preflight.outputs.enabled == 'true'
         run: |
           cd docs-repo
           git add .
@@ -137,7 +161,10 @@ jobs:
       - name: Log sync status
         if: always()
         run: |
-          if [ "${{ env.CHANGES_MADE }}" = "true" ]; then
+          if [ "${{ steps.preflight.outputs.enabled }}" != "true" ]; then
+            echo "⏭️  Docs sync skipped (docs repository not configured for this repo)"
+            echo "ℹ️  Set the DOCS_REPO_TOKEN secret (and optionally DOCS_REPO_NAME) to enable syncing to the docs site"
+          elif [ "${{ env.CHANGES_MADE }}" = "true" ]; then
             echo "🎉 COOKBOOK SYNC SUCCESS!"
             echo "📚 Content synced to docs repository"
             echo "🔧 Navigation updated automatically"
