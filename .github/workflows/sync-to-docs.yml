@@ -8,6 +8,7 @@ on:
 jobs:
   check-sync-config:
     runs-on: ubuntu-latest
+    permissions: {}
     outputs:
       enabled: ${{ steps.check.outputs.enabled }}
     steps:
@@ -28,6 +29,8 @@ jobs:
     needs: check-sync-config
     if: needs.check-sync-config.outputs.enabled == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout cookbook repository
         uses: actions/checkout@v6
