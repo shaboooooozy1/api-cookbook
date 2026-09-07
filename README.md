@@ -68,4 +68,11 @@ Have a project built with the Agent API? We'd love to feature it!
 
 ---
 
-*This repository syncs to [docs.perplexity.ai/cookbook](https://docs.perplexity.ai/cookbook) on every commit.*
+### Docs site sync
+
+The sync workflow runs on pushes to `main` or manual dispatch. Configure these repository Actions secrets to enable it:
+
+- `DOCS_REPO_TOKEN`: a token with contents read/write access to the destination docs repository.
+- `DOCS_REPO_NAME` (optional): the destination repository in `owner/repo` format; defaults to `ppl-ai/api-docs`.
+
+Without `DOCS_REPO_TOKEN`, syncing is skipped with a notice and a workflow summary (including on forks). The built-in `GITHUB_TOKEN` cannot grant access to a different repository. Configured sync failures still fail the job.
