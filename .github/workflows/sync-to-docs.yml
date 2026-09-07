@@ -6,7 +6,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-sync-config:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Check docs sync configuration
+        id: check
+        env:
+          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+        run: |
+          if [ -n "$DOCS_REPO_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping docs sync: DOCS_REPO_TOKEN is not configured."
+            echo "Docs sync skipped. Set DOCS_REPO_TOKEN with write access to the destination repository to enable syncing. Optionally set DOCS_REPO_NAME (default: ppl-ai/api-docs)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   sync-cookbook:
+    needs: check-sync-config
+    if: needs.check-sync-config.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout cookbook repository
@@ -136,8 +156,12 @@ jobs:
             
       - name: Log sync status
         if: always()
+        env:
+          SYNC_STATUS: ${{ job.status }}
         run: |
-          if [ "${{ env.CHANGES_MADE }}" = "true" ]; then
+          if [ "$SYNC_STATUS" != "success" ]; then
+            echo "❌ Cookbook sync did not complete successfully. Check the workflow logs."
+          elif [ "${{ env.CHANGES_MADE }}" = "true" ]; then
             echo "🎉 COOKBOOK SYNC SUCCESS!"
             echo "📚 Content synced to docs repository"
             echo "🔧 Navigation updated automatically"
