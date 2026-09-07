@@ -13,57 +13,77 @@ jobs:
         uses: actions/checkout@v6
         with:
           path: cookbook-repo
-          
+
+      - name: Check docs repository credentials
+        id: check-creds
+        env:
+          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+        run: |
+          if [ -z "$DOCS_REPO_TOKEN" ]; then
+            echo "sync_enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::DOCS_REPO_TOKEN is not configured; skipping docs sync. Configure the DOCS_REPO_TOKEN secret (and optionally DOCS_REPO_NAME) to enable syncing to the docs repository."
+          else
+            echo "sync_enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout docs repository
+        if: steps.check-creds.outputs.sync_enabled == 'true'
         uses: actions/checkout@v6
         with:
           repository: ${{ secrets.DOCS_REPO_NAME || 'ppl-ai/api-docs' }}
           token: ${{ secrets.DOCS_REPO_TOKEN }}
           path: docs-repo
-          
+
       - name: Setup Node.js
+        if: steps.check-creds.outputs.sync_enabled == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: docs-repo/package.json
-          
+
       - name: Install docs dependencies
+        if: steps.check-creds.outputs.sync_enabled == 'true'
         run: |
           cd docs-repo
           npm install
-          
+
       - name: Clear existing cookbook content
+        if: steps.check-creds.outputs.sync_enabled == 'true'
         run: |
           rm -rf docs-repo/cookbook/* || true
-          
+
       - name: Copy cookbook content to docs repository
+        if: steps.check-creds.outputs.sync_enabled == 'true'
         run: |
           # Create cookbook directory if it doesn't exist
           mkdir -p docs-repo/cookbook
-          
+
           # Copy docs content from cookbook to docs repo (already in MDX format)
           cp -r cookbook-repo/docs/* docs-repo/cookbook/
-          
+
           # Copy static assets if they exist
           if [ -d "cookbook-repo/static" ]; then
             mkdir -p docs-repo/cookbook/static
             cp -r cookbook-repo/static/* docs-repo/cookbook/static/
           fi
-          
+
       - name: Generate cookbook navigation
+        if: steps.check-creds.outputs.sync_enabled == 'true'
         run: |
-          cd docs-repo  
+          cd docs-repo
           # Run the navigation generation script
           node scripts/generate-cookbook-nav.js
-          
+
       - name: Configure git
+        if: steps.check-creds.outputs.sync_enabled == 'true'
         run: |
           cd docs-repo
           git config --local user.email "cookbook-sync@perplexity.ai"
           git config --local user.name "Cookbook Sync Bot"
-          
+
       - name: Commit and push changes
+        if: steps.check-creds.outputs.sync_enabled == 'true'
         run: |
           cd docs-repo
           git add .
@@ -74,7 +94,7 @@ jobs:
             git commit -m "📚 Sync cookbook from ${{ github.repository }}@${{ github.sha }}
 
             Updated cookbook content and navigation from community contributions.
-            
+
             Source: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
             git push
             echo "CHANGES_MADE=true" >> $GITHUB_ENV
@@ -109,7 +129,7 @@ jobs:
             }
             
       - name: Report sync failure
-        if: failure()
+        if: failure() && steps.check-creds.outputs.sync_enabled == 'true'
         continue-on-error: true
         uses: actions/github-script@v8
         with:
@@ -137,7 +157,11 @@ jobs:
       - name: Log sync status
         if: always()
         run: |
-          if [ "${{ env.CHANGES_MADE }}" = "true" ]; then
+          if [ "${{ steps.check-creds.outputs.sync_enabled }}" != "true" ]; then
+            echo "⏭️  Docs sync skipped"
+            echo "🔑 DOCS_REPO_TOKEN secret is not configured in this repository"
+            echo "ℹ️  Configure it to enable syncing cookbook content to the docs site"
+          elif [ "${{ env.CHANGES_MADE }}" = "true" ]; then
             echo "🎉 COOKBOOK SYNC SUCCESS!"
             echo "📚 Content synced to docs repository"
             echo "🔧 Navigation updated automatically"
