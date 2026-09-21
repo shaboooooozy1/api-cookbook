@@ -5,24 +5,28 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   sync-cookbook:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout cookbook repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           path: cookbook-repo
           
       - name: Checkout docs repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: ${{ secrets.DOCS_REPO_NAME || 'ppl-ai/api-docs' }}
           token: ${{ secrets.DOCS_REPO_TOKEN }}
           path: docs-repo
-          
+          persist-credentials: false
+
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '18'
           cache: 'npm'
@@ -31,8 +35,8 @@ jobs:
       - name: Install docs dependencies
         run: |
           cd docs-repo
-          npm install
-          
+          npm install --ignore-scripts
+
       - name: Clear existing cookbook content
         run: |
           rm -rf docs-repo/cookbook/* || true
@@ -64,6 +68,9 @@ jobs:
           git config --local user.name "Cookbook Sync Bot"
           
       - name: Commit and push changes
+        env:
+          DOCS_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+          DOCS_REPO: ${{ secrets.DOCS_REPO_NAME || 'ppl-ai/api-docs' }}
         run: |
           cd docs-repo
           git add .
@@ -76,14 +83,14 @@ jobs:
             Updated cookbook content and navigation from community contributions.
             
             Source: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
-            git push
+            git push "https://x-access-token:${DOCS_TOKEN}@github.com/${DOCS_REPO}.git" HEAD
             echo "CHANGES_MADE=true" >> $GITHUB_ENV
           fi
           
       - name: Create deployment comment
         if: env.CHANGES_MADE == 'true'
         continue-on-error: true
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             try {
@@ -111,7 +118,7 @@ jobs:
       - name: Report sync failure
         if: failure()
         continue-on-error: true
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             try {
