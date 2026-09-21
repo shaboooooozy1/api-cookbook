@@ -51,7 +51,11 @@ function renderChart(r) {
     ["Cost", cost],
   ]) {
     const div = document.createElement("div");
-    div.innerHTML = `<dt>${k}</dt><dd>${v}</dd>`;
+    const dt = document.createElement("dt");
+    dt.textContent = k;
+    const dd = document.createElement("dd");
+    dd.textContent = v;
+    div.append(dt, dd);
     statsEl.appendChild(div);
   }
   show(resultEl);

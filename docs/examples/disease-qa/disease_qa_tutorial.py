@@ -155,11 +155,7 @@ def create_html_ui(api_key: str, output_path: str = "disease_qa.html") -> str:
         The absolute path to the created HTML file
     """
     logger.info(f"Creating HTML UI file at {output_path}")
-    
-    # Sanitize API key for display in logs
-    displayed_key = f"{api_key[:5]}...{api_key[-5:]}" if len(api_key) > 10 else "***"
-    logger.info(f"Using API key: {displayed_key}")
-    
+
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -488,12 +484,26 @@ Now answer this question:
         if (Array.isArray(data.citations) && data.citations.length > 0) {{
           data.citations.forEach(citation => {{
             const li = document.createElement('li');
-            const link = document.createElement('a');
-            link.href = citation;
-            link.textContent = citation;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer'; // Security best practice
-            li.appendChild(link);
+            // Only link absolute http(s) URLs; anything else (e.g. javascript:) is rendered as plain text
+            let safeHref = null;
+            try {{
+              const u = new URL(String(citation));
+              if (u.protocol === 'http:' || u.protocol === 'https:') {{
+                safeHref = u.href;
+              }}
+            }} catch (e) {{
+              safeHref = null;
+            }}
+            if (safeHref) {{
+              const link = document.createElement('a');
+              link.href = safeHref;
+              link.textContent = citation;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer'; // Security best practice
+              li.appendChild(link);
+            }} else {{
+              li.textContent = String(citation);
+            }}
             citationsList.appendChild(li);
           }});
         }} else {{
