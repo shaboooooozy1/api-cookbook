@@ -182,14 +182,16 @@ def _request(
 def _download(base_url: str, key: str, url_or_path: str, timeout: int = 120) -> bytes:
     """GET a file's raw bytes from an absolute URL or a base-relative path.
 
-    The bearer key is only attached when the target is an https URL on the
-    same host as ``base_url``; other hosts (e.g. pre-signed artifact URLs)
-    are fetched without credentials.
+    The bearer key is only attached when the target has the same origin
+    (scheme and host) as the configured ``base_url`` -- the same origin every
+    other request in this module already sends the key to. Other origins
+    (e.g. pre-signed artifact URLs, or an http:// URL for an https base) are
+    fetched without credentials.
     """
     url = url_or_path if url_or_path.startswith("http") else base_url + url_or_path
     target, api = urlsplit(url), urlsplit(base_url)
     headers = {"User-Agent": "api-cookbook-finance-chart-sandbox/3.0"}
-    if target.scheme == "https" and target.netloc == api.netloc:
+    if target.scheme == api.scheme and target.netloc == api.netloc:
         headers["Authorization"] = f"Bearer {key}"
     req = urllib.request.Request(url, headers=headers, method="GET")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
