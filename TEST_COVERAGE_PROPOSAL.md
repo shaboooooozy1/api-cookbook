@@ -110,6 +110,13 @@ at the highest-value seams in each example.
   example owns its tests (`tests/fact_checker/test_parsing.py`, …).
 - Add a `pytest` step to `.github/workflows/pr-validation.yml` that
   installs dev deps and runs `pytest -m "not live"`.
+- Before adding any step that executes PR-authored Python, keep the
+  top-level `permissions: contents: read` block in `pr-validation.yml`
+  and install with `npm ci --ignore-scripts` / pinned Python deps.
+- The `PPLX_API_KEY`-gated live job must run only from `nightly` /
+  `workflow_dispatch` on `main` — never on a `pull_request` trigger,
+  and never via `pull_request_target`, since fork PRs must not reach
+  the secret.
 - Add a `ruff check` step (non-blocking initially, then blocking).
 
 ### Layer 2 — Unit tests (per-example, in priority order)
@@ -152,7 +159,8 @@ shape).
 1. Add `pyproject.toml`, `requirements-dev.txt`, `tests/` skeleton.
 2. Add `tests/fact_checker/test_response_parsing.py` and
    `test_models.py` — pure-function tests, no HTTP, no env.
-3. Wire `pytest -m "not live"` into `pr-validation.yml`.
+3. Wire `pytest -m "not live"` into `pr-validation.yml` (keeping its
+   `permissions: contents: read` block).
 
 This proves out the harness with ~50 lines of test code and starts
 catching the highest-risk regressions (parser drift, schema drift)

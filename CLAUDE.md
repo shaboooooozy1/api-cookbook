@@ -110,7 +110,7 @@ On push to `main`, the contents of `docs/` are copied into `ppl-ai/api-docs` und
 ## Working in This Repo
 
 - **Don't add Python tooling at the repo root.** Each example owns its own `requirements.txt`; there is no shared virtualenv or top-level `pyproject.toml`.
-- **Don't commit secrets.** Examples expect API keys via env vars or a `.env` file (gitignored). Some examples support a local key file (e.g. `pplx_api_key`) — these are read but should never be committed.
+- **Don't commit secrets.** Examples expect API keys via env vars or a `.env` file. Some examples support a local key file (e.g. `pplx_api_key`). Both are covered by `.gitignore`; never commit them, and never add a negation rule that re-includes them.
 - **Prefer editing existing examples** to creating parallel ones; novel patterns belong in `docs/articles/`.
 - **README.mdx, not README.md**, for content under `docs/` (the sync workflow and validator only handle MDX). The top-level `README.md` and `CONTRIBUTING.md` stay as plain markdown.
 - **Showcase entries are content-only** — no code, no requirements.txt; link to an external repo for the implementation.
