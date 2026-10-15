@@ -11,8 +11,8 @@ load_dotenv()
 # Configure LLM for memory summarization
 llm = LlamaOpenAI(
     model="gpt-4o-2024-08-06",
-    api_key=os.getenv("PERPLEXITY_API_KEY"),
-    base_url="https://api.openai.com/v1/chat/completions"
+    api_key=os.getenv("OPENAI_API_KEY"),
+    api_base="https://api.openai.com/v1"
 )
 
 # Initialize memory with token-aware summarization

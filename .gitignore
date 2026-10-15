@@ -13,10 +13,17 @@
 
 # Misc
 .DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+
+# Local secrets / generated artifacts — see docs/examples/*/README.mdx
+.env
+.env.*
+!.env.example
+pplx_api_key
+.pplx_api_key
+PPLX_API_KEY
+.PPLX_API_KEY
+disease_qa.html
+disease_app.log
 
 npm-debug.log*
 yarn-debug.log*

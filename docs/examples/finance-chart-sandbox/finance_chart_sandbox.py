@@ -54,6 +54,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -179,16 +180,20 @@ def _request(
 
 
 def _download(base_url: str, key: str, url_or_path: str, timeout: int = 120) -> bytes:
-    """GET a file's raw bytes from an absolute URL or a base-relative path."""
+    """GET a file's raw bytes from an absolute URL or a base-relative path.
+
+    The bearer key is only attached when the target has the same origin
+    (scheme and host) as the configured ``base_url`` -- the same origin every
+    other request in this module already sends the key to. Other origins
+    (e.g. pre-signed artifact URLs, or an http:// URL for an https base) are
+    fetched without credentials.
+    """
     url = url_or_path if url_or_path.startswith("http") else base_url + url_or_path
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Authorization": f"Bearer {key}",
-            "User-Agent": "api-cookbook-finance-chart-sandbox/3.0",
-        },
-        method="GET",
-    )
+    target, api = urlsplit(url), urlsplit(base_url)
+    headers = {"User-Agent": "api-cookbook-finance-chart-sandbox/3.0"}
+    if target.scheme == api.scheme and target.netloc == api.netloc:
+        headers["Authorization"] = f"Bearer {key}"
+    req = urllib.request.Request(url, headers=headers, method="GET")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.read()
 

@@ -294,6 +294,9 @@ def _run_job(job_id: str) -> None:
         return
 
     ticker = meta.get("ticker", "").upper() or None
+    # The ticker comes from sandbox stdout; only accept a plain symbol.
+    if ticker and not re.fullmatch(r"[A-Z0-9.\-]{1,10}", ticker):
+        ticker = None
     label = meta.get("label") or "price history"
     title = f"{ticker} · closing price · {label}" if ticker else query
     cost = fcs.total_cost(response)
@@ -309,7 +312,7 @@ def _run_job(job_id: str) -> None:
         "sandbox_invocations": fcs.sandbox_invocations(response),
         "cost": ({"total": cost[0], "currency": cost[1]} if cost else None),
     }
-    filename = ((ticker or "chart") + "_" + re.sub(r"[^\w]+", "-", label)).strip("-")
+    filename = re.sub(r"[^\w.-]+", "-", (ticker or "chart") + "_" + label).strip("-")[:64] or "chart"
     _set(job_id, csv=csv_text, png=png_bytes, filename=filename,
          response=response, result=result)
     _push(job_id, {"kind": "chart", "result": result})

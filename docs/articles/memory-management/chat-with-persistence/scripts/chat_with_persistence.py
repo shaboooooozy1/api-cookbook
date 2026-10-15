@@ -100,6 +100,7 @@ def chat_with_persistence(user_query: str, index: VectorStoreIndex):
     return assistant_response
 
 # Usage
-index = initialize_chat_session()
-print("Response:", chat_with_persistence("What's the current weather in London?", index))
-print("Follow-up:", chat_with_persistence("What about tomorrow's forecast?", index))
+if __name__ == "__main__":
+    index = initialize_chat_session()
+    print("Response:", chat_with_persistence("What's the current weather in London?", index))
+    print("Follow-up:", chat_with_persistence("What about tomorrow's forecast?", index))
